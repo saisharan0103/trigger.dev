@@ -116,6 +116,14 @@ export default defineConfig({
 });
 ```
 
+### `Error: cannot merge resource due to conflicting Schema URL`
+
+This error can happen during the `trigger.dev deploy` process if your project initializes the OpenTelemetry SDK for tracing. Trigger.dev also sets up tracing internally, which can conflict with your configuration. Set `OTEL_TRACES_EXPORTER=none` when running the deploy command to disable your own trace exporter and resolve the conflict:
+
+```bash
+OTEL_TRACES_EXPORTER=none pnpm trigger:deploy
+```
+
 <CorepackError />
 
 
