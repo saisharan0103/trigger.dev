@@ -222,8 +222,30 @@ server.tool(
 
 const app = polka();
 app.get("/sse", (_req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Cache-Control", "no-cache");
+
+  // Immediately flush the headers so the client knows we're streaming
+  res.flushHeaders?.();
+
   mcpTransport = new SSEServerTransport("/messages", res);
   server.connect(mcpTransport);
+
+  const keepAliveInterval = setInterval(() => {
+    try {
+      res.write(": keepalive\n\n");
+    } catch {
+      clearInterval(keepAliveInterval);
+    }
+  }, 25_000);
+
+  const cleanUp = () => {
+    clearInterval(keepAliveInterval);
+  };
+
+  res.on("close", cleanUp);
+  res.on("finish", cleanUp);
 });
 app.post("/messages", (req, res) => {
   if (mcpTransport) {
