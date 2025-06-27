@@ -351,23 +351,28 @@ export function correctErrorStackTrace(
   projectDir?: string,
   options?: { removeFirstLine?: boolean; isDev?: boolean }
 ) {
-  const [errorLine, ...traceLines] = stackTrace.split("\n");
+  const [errorLine, ...traceLines] = stackTrace.split("\n").map((l) => l.trimEnd());
 
-  return [
-    options?.removeFirstLine ? undefined : errorLine,
-    ...traceLines.map((line) => correctStackTraceLine(line, projectDir, options?.isDev)),
-  ]
+  const cleanedLines = traceLines
+    .map((line) => correctStackTraceLine(line, projectDir, options?.isDev))
+    .filter((l): l is string => Boolean(l))
+    // Avoid flooding Slack with deep stacks – keep the first few relevant lines
+    .slice(0, 5);
+
+  return [options?.removeFirstLine ? undefined : errorLine.trimEnd(), ...cleanedLines]
     .filter(Boolean)
     .join("\n");
 }
 
+// Stack trace lines that are internal to Trigger.dev or Node and should be removed
 const LINES_TO_IGNORE = [
   /ConsoleInterceptor/,
   /TriggerTracer/,
   /TaskExecutor/,
   /EXECUTE_TASK_RUN/,
-  /@trigger.dev\/core/,
-  /packages\/core\/src\/v3/,
+  /@trigger.dev\/core/, // compiled package paths
+  /packages\/core\/src\/v3/, // local package paths
+  /\/\.npm\/_npx\/trigger\.dev\/core/, // npx execution paths
   /safeJsonProcess/,
   /__entryPoint.ts/,
   /ZodIpc/,
@@ -380,7 +385,23 @@ function correctStackTraceLine(line: string, projectDir?: string, isDev?: boolea
     return;
   }
 
-  // Check to see if the path is inside the project directory
+  // Remove Node internal frames such as "node:internal/..." or "internal/..."
+  // We check for lines starting with these prefixes or wrapped in parentheses.
+  if (
+    line.includes("(node:") ||
+    line.trimStart().startsWith("node:") ||
+    line.includes("(internal/") ||
+    line.trimStart().startsWith("internal/")
+  ) {
+    return;
+  }
+
+  // Ignore generic node_modules paths unless they are inside the provided project directory
+  if (/node_modules/.test(line) && (!projectDir || !line.includes(projectDir))) {
+    return;
+  }
+
+  // Check to see if the path is inside the project directory when running locally
   if (isDev && projectDir && !line.includes(projectDir)) {
     return;
   }
