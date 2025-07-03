@@ -35,10 +35,10 @@ To start the Trigger.dev MCP server, simply pass the `--mcp` flag to the `dev` c
 trigger dev --mcp
 ```
 
-By default it runs on port `3333`. You can change this by passing the `--mcp-port` flag:
+By default it runs on port `3001`. You can change this by passing the `--mcp-port` flag:
 
 ```bash
-trigger dev --mcp --mcp-port 3334
+trigger dev --mcp --mcp-port 3002
 ```
 
 ### Configuring your MCP client
