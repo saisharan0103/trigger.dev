@@ -23,7 +23,8 @@ const DevCommandOptions = CommonCommandOptions.extend({
   keepTmpFiles: z.boolean().default(false),
   maxConcurrentRuns: z.coerce.number().optional(),
   mcp: z.boolean().default(false),
-  mcpPort: z.coerce.number().optional().default(3333),
+  // default port for the local MCP server
+  mcpPort: z.coerce.number().optional().default(3001),
   analyze: z.boolean().default(false),
   disableWarnings: z.boolean().default(false),
 });
@@ -55,7 +56,7 @@ export function configureDevCommand(program: Command) {
         "Keep temporary files after the dev session ends, helpful for debugging"
       )
       .option("--mcp", "Start the MCP server")
-      .option("--mcp-port", "The port to run the MCP server on", "3333")
+      .option("--mcp-port", "The port to run the MCP server on", "3001")
       .addOption(
         new CommandOption("--analyze", "Analyze the build output and import timings").hideHelp()
       )
